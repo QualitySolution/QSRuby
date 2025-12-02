@@ -3,6 +3,7 @@
 require 'grpc'
 require_relative 'Protos/Reception_pb'
 require_relative 'Protos/Reception_services_pb'
+require_relative 'log_buffer'
 
 module QSErrorReporting
   # Main error reporting class that sends errors to the server via gRPC
@@ -23,19 +24,28 @@ module QSErrorReporting
     #   - user_name [String] User name (optional)
     #   - user_email [String] User email (optional)
     #   - database_name [String] Database name (optional)
+    #   - log_buffer_size [Integer] Number of log lines to keep (default: 300)
+    #   - auto_capture_logs [Boolean] Automatically capture stdout/stderr (default: true)
     def initialize(config)
       @config = config
       validate_config!
       @stub = create_stub
+
+      # Initialize log buffer
+      @log_buffer = LogBuffer.new(max_lines: config.fetch(:log_buffer_size, 300))
+      @log_buffer.start_capture if config.fetch(:auto_capture_logs, true)
     end
 
     # Report an error to the server
     # @param exception [Exception] The exception to report
     # @param report_type [Symbol] Type of report (:automatic, :user, :known)
     # @param user_description [String] Optional user description
-    # @param log [String] Optional log content
+    # @param log [String] Optional log content (if empty, will use captured logs)
     # @return [Boolean] True if error was successfully reported
     def report_error(exception, report_type: :automatic, user_description: '', log: '')
+      # If log is empty, get from buffer
+      log = @log_buffer.get_last_lines if log.empty? && @log_buffer
+
       request = build_request(exception, report_type, user_description, log)
 
       begin
@@ -58,6 +68,28 @@ module QSErrorReporting
           report_error($!, report_type: :automatic)
         end
       end
+    end
+
+    # Start capturing console output to log buffer
+    def start_log_capture
+      @log_buffer&.start_capture
+    end
+
+    # Stop capturing console output
+    def stop_log_capture
+      @log_buffer&.stop_capture
+    end
+
+    # Get the last N lines from log buffer
+    # @param count [Integer] Number of lines to retrieve (default: all)
+    # @return [String] The collected log lines
+    def get_logs(count = nil)
+      @log_buffer&.get_last_lines(count) || ''
+    end
+
+    # Clear the log buffer
+    def clear_logs
+      @log_buffer&.clear
     end
 
     private
