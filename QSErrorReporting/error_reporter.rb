@@ -62,9 +62,10 @@ module QSErrorReporting
 
     # Install global exception handler
     # This captures unhandled exceptions and reports them automatically
+    # Excludes user interrupts (Ctrl-C) and system signals (SIGTERM)
     def install_global_handler!
       at_exit do
-        if $! && !$!.is_a?(SystemExit)
+        if $! && !$!.is_a?(SystemExit) && !$!.is_a?(Interrupt) && !$!.is_a?(SignalException)
           report_error($!, report_type: :automatic)
         end
       end
