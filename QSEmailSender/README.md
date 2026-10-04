@@ -11,6 +11,8 @@ QSRuby/QSEmailSender/
 │   ├── BackendEmailSender.proto          # Protobuf определение (копия из QS.Cloud.Email)
 │   ├── BackendEmailSender_pb.rb          # Сгенерированный код protobuf
 │   └── BackendEmailSender_services_pb.rb # gRPC stub
+├── spec/
+│   └── backend_client_spec.rb            # Тесты (rspec)
 └── backend_client.rb                     # Клиент
 ```
 
@@ -47,4 +49,12 @@ client.send_email('user@example.ru', 'Тема', 'Текст письма')
 
 ```bash
 protoc --ruby_out=QSRuby/QSEmailSender -I QSRuby/QSEmailSender QSRuby/QSEmailSender/Protos/BackendEmailSender.proto
+```
+
+## Тесты
+
+Тесты написаны на rspec и запускаются из проекта, который подключает QSRuby (нужны gem `rspec`):
+
+```bash
+bundle exec rspec QSRuby/QSEmailSender/spec
 ```
