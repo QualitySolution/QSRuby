@@ -39,6 +39,8 @@ module QSErrorReporting
     # Add a line to the buffer
     # @param line [String] The line to add
     def add_line(line)
+      line = line.dup.force_encoding(Encoding::UTF_8) if line.encoding == Encoding::BINARY
+      line = line.encode(Encoding::UTF_8, invalid: :replace, undef: :replace)
       @mutex.synchronize do
         @buffer << "#{Time.now.strftime('%Y-%m-%d %H:%M:%S')} | #{line}"
         @buffer.shift if @buffer.size > @max_lines
